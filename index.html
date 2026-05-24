@@ -812,12 +812,27 @@ async function lookupCharacterImage(item) {
     if (!r.ok) return null;
     const j = await r.json();
     const arr = Array.isArray(j.data) ? j.data : (j.data ? [j.data] : []);
-    // STRICT: only accept an exact (case-insensitive) name match. The API's
-    // name search returns partial matches, so falling back to "any result"
-    // would give us the wrong character (e.g. "Belle" → "Bellwether").
+    // Filter to exact (case-insensitive) name matches that have an image.
     const lc = item.name.toLowerCase();
-    const exact = arr.find(c => c.imageUrl && c.name && c.name.toLowerCase() === lc);
-    return exact ? exact.imageUrl : null;
+    const exacts = arr.filter(c => c.imageUrl && c.name && c.name.toLowerCase() === lc);
+    if (exacts.length === 0) return null;
+    if (exacts.length === 1) return exacts[0].imageUrl;
+    // Multiple exact name matches: use our curated film to disambiguate.
+    // We check both films and tvShows, and accept a substring match in
+    // either direction so e.g. our "Toy Story" matches their "Toy Story 2".
+    if (item.film) {
+      const f = item.film.toLowerCase();
+      const filmMatch = exacts.find(c => {
+        const credits = [...(c.films || []), ...(c.tvShows || []), ...(c.shortFilms || [])];
+        return credits.some(cr => {
+          const a = (cr || '').toLowerCase();
+          return a && (a.includes(f) || f.includes(a));
+        });
+      });
+      if (filmMatch) return filmMatch.imageUrl;
+    }
+    // Couldn't disambiguate — refuse rather than risk the wrong character.
+    return null;
   } catch {
     return null;
   }
