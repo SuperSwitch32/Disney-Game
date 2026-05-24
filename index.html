@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>Disney Auction</title>
+<style>
+  :root {
+    --bg: #0b1026;
+    --bg-2: #141a3a;
+    --panel: #1b2350;
+    --accent: #ffd54a;
+    --accent-2: #ff5db1;
+    --text: #f5f6ff;
+    --muted: #9aa3d6;
+    --good: #5ee2a0;
+    --bad: #ff6b6b;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    height: 100%; width: 100%;
+    background: radial-gradient(ellipse at top, #1f2a6d 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+  }
+  .screen.active { display: flex; }
+  .center { align-items: center; justify-content: center; }
+
+  /* ========== Menu / Settings / Setup ========== */
+  .card {
+    background: var(--panel);
+    border-radius: 18px;
+    padding: 24px;
+    width: min(520px, 92vw);
+    max-height: 92vh;
+    overflow: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  h1 {
+    font-size: 32px;
+    margin: 0 0 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-align: center;
+  }
+  h2 { font-size: 20px; margin: 16px 0 8px; }
+  .sub { color: var(--muted); text-align: center; margin-bottom: 18px; }
+  label.row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding: 8px 0; font-size: 15px;
+  }
+  input[type=number], input[type=text], select {
+    background: var(--bg-2);
+    color: var(--text);
+    border: 1px solid #2c3672;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 15px;
+    width: 110px;
+    font-family: inherit;
+  }
+  input[type=text] { width: 100%; }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #1a1233;
+    width: 100%;
+    margin-top: 14px;
+    font-size: 17px;
+  }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary {
+    background: #2c3672;
+    color: var(--text);
+    width: 100%;
+    margin-top: 8px;
+  }
+  .btn-mini {
+    background: #2c3672;
+    color: var(--text);
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  .player-input-row {
+    display: flex; gap: 8px; align-items: center; margin: 6px 0;
+  }
+  .player-input-row input { flex: 1; }
+  .player-input-row button { padding: 6px 10px; font-size: 13px; background: var(--bad); color: white; }
+  .seg {
+    display: flex; background: var(--bg-2); border-radius: 10px; padding: 3px; gap: 3px;
+  }
+  .seg button {
+    flex: 1;
+    background: transparent;
+    color: var(--muted);
+    padding: 8px;
+    font-size: 14px;
+  }
+  .seg button.on {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #1a1233;
+  }
+
+  /* ========== Auction screen ========== */
+  #auction {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  .stage {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(46vmin, 380px);
+    aspect-ratio: 1 / 1.25;
+    background: linear-gradient(160deg, #2c3672, #1b2350);
+    border-radius: 22px;
+    padding: 14px;
+    display: flex; flex-direction: column; align-items: center;
+    box-shadow: 0 0 60px rgba(255, 213, 74, 0.15), 0 0 0 2px #3a4a9e inset;
+    z-index: 5;
+  }
+  .stage .char-img {
+    flex: 1;
+    width: 100%;
+    background: #0b1026;
+    border-radius: 14px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-bottom: 8px;
+  }
+  .stage .char-name {
+    font-size: 18px; font-weight: 700; text-align: center; line-height: 1.1;
+  }
+  .stage .char-meta {
+    font-size: 11px; color: var(--muted); margin-top: 2px; text-align: center;
+  }
+  .bid-display {
+    margin-top: 8px;
+    text-align: center;
+  }
+  .bid-amount {
+    font-size: 32px; font-weight: 800; color: var(--accent);
+    line-height: 1;
+  }
+  .bid-leader {
+    font-size: 12px; color: var(--muted); margin-top: 2px;
+    min-height: 14px;
+  }
+  .timer-ring {
+    position: absolute;
+    inset: -14px;
+    border-radius: 22px;
+    pointer-events: none;
+  }
+  .timer-ring circle {
+    fill: none;
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+  .timer-text {
+    position: absolute;
+    top: -10px; left: 50%; transform: translateX(-50%);
+    background: var(--bg);
+    padding: 2px 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--accent);
+    box-shadow: 0 0 0 2px #3a4a9e;
+  }
+
+  .player {
+    position: absolute;
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 10px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: space-between;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+    border: 2px solid #2c3672;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .player.leading {
+    border-color: var(--accent);
+    box-shadow: 0 0 24px rgba(255, 213, 74, 0.45);
+  }
+  .player.broke { opacity: 0.5; }
+  .player .name {
+    font-weight: 700; font-size: 15px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .player .budget {
+    font-size: 13px; color: var(--good);
+    margin: 2px 0 6px;
+  }
+  .player .bid-btn {
+    width: 100%;
+    flex: 1;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #1a1233;
+    font-size: 16px;
+    font-weight: 800;
+    border-radius: 12px;
+    min-height: 44px;
+  }
+  .player .bid-btn:disabled {
+    background: #2c3672;
+    color: var(--muted);
+    opacity: 0.6;
+  }
+  .player .bid-btn:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+
+  .top-bar {
+    position: absolute;
+    top: 8px; left: 50%; transform: translateX(-50%);
+    z-index: 10;
+    background: rgba(11, 16, 38, 0.75);
+    backdrop-filter: blur(8px);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    color: var(--muted);
+    display: flex; gap: 12px; align-items: center;
+  }
+  .top-bar button {
+    background: transparent; color: var(--muted); padding: 4px 8px; font-size: 13px;
+  }
+
+  /* ========== Modal / overlay ========== */
+  .overlay {
+    position: absolute; inset: 0;
+    background: rgba(11, 16, 38, 0.85);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 50;
+  }
+  .overlay .card { text-align: center; }
+  .sold-stamp {
+    font-size: 42px; font-weight: 900;
+    color: var(--accent-2);
+    transform: rotate(-8deg);
+    margin: 8px 0;
+    text-shadow: 0 0 16px rgba(255, 93, 177, 0.5);
+  }
+
+  /* ========== Results ========== */
+  .results-grid {
+    display: grid;
+    gap: 14px;
+    width: min(900px, 96vw);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    max-height: 80vh;
+    overflow: auto;
+    padding: 4px;
+  }
+  .team-card {
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 12px;
+    border: 2px solid #2c3672;
+  }
+  .team-card.winner {
+    border-color: var(--accent);
+    box-shadow: 0 0 24px rgba(255, 213, 74, 0.35);
+  }
+  .team-card h3 { margin: 0 0 6px; font-size: 17px; }
+  .team-card .roster { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .team-card .char {
+    display: flex; align-items: center; gap: 4px;
+    background: var(--bg-2); border-radius: 8px; padding: 3px 6px;
+    font-size: 12px;
+  }
+  .team-card .char img { width: 22px; height: 22px; border-radius: 4px; object-fit: cover; background: #000; }
+  .vote-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .vote-btns button { flex: 1; min-width: 100px; background: #2c3672; color: var(--text); }
+  .vote-btns button.voted { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #1a1233; }
+
+  .loading {
+    color: var(--muted);
+    font-size: 14px;
+    text-align: center;
+  }
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid #2c3672;
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 12px auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+  .pulse { animation: pulse 0.4s ease; }
+</style>
+</head>
+<body>
+
+<!-- ========== Menu ========== -->
+<div id="menu" class="screen active center">
+  <div class="card">
+    <h1>Disney Auction</h1>
+    <div class="sub">Build the best team. Outbid your friends.</div>
+    <button class="btn-primary" onclick="goto('setup')">New Game</button>
+    <button class="btn-secondary" onclick="goto('settings')">Settings</button>
+  </div>
+</div>
+
+<!-- ========== Settings ========== -->
+<div id="settings" class="screen center">
+  <div class="card">
+    <h1>Settings</h1>
+    <label class="row">Budget per player ($)
+      <input id="s-budget" type="number" min="5" max="500" step="1" />
+    </label>
+    <label class="row">Characters per game
+      <input id="s-chars" type="number" min="3" max="50" step="1" />
+    </label>
+    <label class="row">Starting bid ($)
+      <input id="s-startbid" type="number" min="0" max="20" step="1" />
+    </label>
+    <label class="row">Bid increment ($)
+      <input id="s-increment" type="number" min="1" max="10" step="1" />
+    </label>
+    <label class="row">Initial timer (sec)
+      <input id="s-timer-init" type="number" min="5" max="60" step="1" />
+    </label>
+    <label class="row">Reset timer on bid (sec)
+      <input id="s-timer-reset" type="number" min="2" max="30" step="1" />
+    </label>
+    <button class="btn-primary" onclick="saveSettings(); goto('menu')">Save</button>
+    <button class="btn-secondary" onclick="goto('menu')">Cancel</button>
+  </div>
+</div>
+
+<!-- ========== Setup ========== -->
+<div id="setup" class="screen center">
+  <div class="card">
+    <h1>New Game</h1>
+    <h2>Players (2&ndash;6)</h2>
+    <div id="player-inputs"></div>
+    <button class="btn-mini" onclick="addPlayerInput()">+ Add Player</button>
+
+    <h2>Scoring</h2>
+    <div class="seg" id="scoring-seg">
+      <button data-val="voting" onclick="setScoring('voting')">Player voting</button>
+      <button data-val="points" onclick="setScoring('points')">Character points</button>
+    </div>
+    <div class="sub" id="scoring-desc" style="margin-top: 8px; font-size: 13px;"></div>
+
+    <button class="btn-primary" id="start-btn" onclick="startGame()">Start Game</button>
+    <button class="btn-secondary" onclick="goto('menu')">Back</button>
+  </div>
+</div>
+
+<!-- ========== Loading ========== -->
+<div id="loading" class="screen center">
+  <div class="card">
+    <h1>Summoning the Magic</h1>
+    <div class="spinner"></div>
+    <div class="loading" id="loading-text">Fetching Disney characters…</div>
+  </div>
+</div>
+
+<!-- ========== Auction ========== -->
+<div id="auction" class="screen">
+  <div class="top-bar">
+    <span id="round-info">Round 1 / 10</span>
+    <button onclick="confirmQuit()">Quit</button>
+  </div>
+  <div class="stage" id="stage">
+    <svg class="timer-ring" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <rect x="2" y="2" width="96" height="96" rx="10" ry="10" stroke="#2c3672" />
+      <rect id="timer-bar" x="2" y="2" width="96" height="96" rx="10" ry="10" stroke="var(--accent)" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0" />
+    </svg>
+    <div class="timer-text" id="timer-text">15</div>
+    <div class="char-img" id="char-img"></div>
+    <div class="char-name" id="char-name"></div>
+    <div class="char-meta" id="char-meta"></div>
+    <div class="bid-display">
+      <div class="bid-amount" id="bid-amount">$1</div>
+      <div class="bid-leader" id="bid-leader">No bids yet</div>
+    </div>
+  </div>
+  <!-- players injected dynamically -->
+</div>
+
+<!-- ========== Sold overlay ========== -->
+<div id="sold" class="screen center">
+  <div class="card">
+    <h1 id="sold-title">SOLD!</h1>
+    <div class="sold-stamp" id="sold-amount">$0</div>
+    <div id="sold-detail" class="sub"></div>
+    <button class="btn-primary" onclick="nextRound()">Next Character</button>
+  </div>
+</div>
+
+<!-- ========== Results ========== -->
+<div id="results" class="screen center">
+  <div style="width: 100%; padding: 16px;">
+    <h1 id="results-title">Final Teams</h1>
+    <div class="sub" id="results-sub"></div>
+    <div class="results-grid" id="results-grid"></div>
+    <div style="text-align: center; margin-top: 14px;">
+      <button class="btn-primary" style="max-width: 280px; display: inline-block;" onclick="goto('menu')">Play Again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  STATE
+// ============================================================
+const DEFAULTS = {
+  budget: 20,
+  charsPerGame: 10,
+  startBid: 1,
+  increment: 1,
+  timerInit: 15,
+  timerReset: 5,
+};
+let settings = loadSettings();
+let setup = {
+  players: ['Player 1', 'Player 2'],
+  scoring: 'voting', // or 'points'
+};
+let game = null;
+
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem('disney-auction-settings') || '{}');
+    return { ...DEFAULTS, ...s };
+  } catch { return { ...DEFAULTS }; }
+}
+function saveSettings() {
+  settings = {
+    budget: clampInt('s-budget', 5, 500, DEFAULTS.budget),
+    charsPerGame: clampInt('s-chars', 3, 50, DEFAULTS.charsPerGame),
+    startBid: clampInt('s-startbid', 0, 20, DEFAULTS.startBid),
+    increment: clampInt('s-increment', 1, 10, DEFAULTS.increment),
+    timerInit: clampInt('s-timer-init', 5, 60, DEFAULTS.timerInit),
+    timerReset: clampInt('s-timer-reset', 2, 30, DEFAULTS.timerReset),
+  };
+  localStorage.setItem('disney-auction-settings', JSON.stringify(settings));
+}
+function clampInt(id, min, max, def) {
+  const v = parseInt(document.getElementById(id).value, 10);
+  if (isNaN(v)) return def;
+  return Math.max(min, Math.min(max, v));
+}
+function fillSettingsForm() {
+  document.getElementById('s-budget').value = settings.budget;
+  document.getElementById('s-chars').value = settings.charsPerGame;
+  document.getElementById('s-startbid').value = settings.startBid;
+  document.getElementById('s-increment').value = settings.increment;
+  document.getElementById('s-timer-init').value = settings.timerInit;
+  document.getElementById('s-timer-reset').value = settings.timerReset;
+}
+
+// ============================================================
+//  NAVIGATION
+// ============================================================
+function goto(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'settings') fillSettingsForm();
+  if (id === 'setup') refreshSetup();
+}
+function confirmQuit() {
+  if (confirm('Quit the current game?')) {
+    stopTimer();
+    goto('menu');
+  }
+}
+
+// ============================================================
+//  SETUP
+// ============================================================
+function refreshSetup() {
+  renderPlayerInputs();
+  setScoring(setup.scoring);
+}
+function renderPlayerInputs() {
+  const box = document.getElementById('player-inputs');
+  box.innerHTML = '';
+  setup.players.forEach((name, i) => {
+    const row = document.createElement('div');
+    row.className = 'player-input-row';
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.value = name;
+    inp.maxLength = 16;
+    inp.placeholder = `Player ${i + 1}`;
+    inp.oninput = (e) => { setup.players[i] = e.target.value; };
+    row.appendChild(inp);
+    if (setup.players.length > 2) {
+      const del = document.createElement('button');
+      del.textContent = '×';
+      del.onclick = () => { setup.players.splice(i, 1); renderPlayerInputs(); };
+      row.appendChild(del);
+    }
+    box.appendChild(row);
+  });
+}
+function addPlayerInput() {
+  if (setup.players.length >= 6) return;
+  setup.players.push(`Player ${setup.players.length + 1}`);
+  renderPlayerInputs();
+}
+function setScoring(mode) {
+  setup.scoring = mode;
+  document.querySelectorAll('#scoring-seg button').forEach(b => {
+    b.classList.toggle('on', b.dataset.val === mode);
+  });
+  document.getElementById('scoring-desc').textContent =
+    mode === 'voting'
+      ? 'After the auction, players vote for the best team (can\'t vote for themselves).'
+      : 'Each character has a popularity score (from films, shows, games, attractions). Highest total wins.';
+}
+
+// ============================================================
+//  CHARACTERS (Disney API)
+// ============================================================
+async function fetchCharacters(n) {
+  // Hit a few random pages, pool the results, filter for usable ones.
+  // API: https://api.disneyapi.dev/character?page=N&pageSize=50
+  const PAGE_SIZE = 50;
+  // Try to estimate totalPages first
+  let totalPages = 150; // conservative fallback (~7500 chars)
+  try {
+    const r = await fetch(`https://api.disneyapi.dev/character?page=1&pageSize=${PAGE_SIZE}`);
+    const j = await r.json();
+    if (j.info && j.info.totalPages) totalPages = j.info.totalPages;
+  } catch (e) {
+    throw new Error('Could not reach the Disney API. Are you online?');
+  }
+
+  const pool = [];
+  const seenIds = new Set();
+  const triedPages = new Set();
+  const maxTries = 12;
+  let tries = 0;
+
+  while (pool.length < n * 4 && tries < maxTries) {
+    tries++;
+    let p;
+    do { p = 1 + Math.floor(Math.random() * totalPages); } while (triedPages.has(p));
+    triedPages.add(p);
+    try {
+      const r = await fetch(`https://api.disneyapi.dev/character?page=${p}&pageSize=${PAGE_SIZE}`);
+      const j = await r.json();
+      for (const c of (j.data || [])) {
+        if (seenIds.has(c._id)) continue;
+        seenIds.add(c._id);
+        if (!c.imageUrl) continue;
+        // Filter to characters with at least some "presence"
+        const presence = (c.films?.length || 0) + (c.tvShows?.length || 0) + (c.shortFilms?.length || 0) + (c.videoGames?.length || 0) + (c.parkAttractions?.length || 0);
+        if (presence === 0) continue;
+        pool.push({
+          id: c._id,
+          name: c.name,
+          imageUrl: c.imageUrl,
+          films: c.films || [],
+          tvShows: c.tvShows || [],
+          shortFilms: c.shortFilms || [],
+          videoGames: c.videoGames || [],
+          parkAttractions: c.parkAttractions || [],
+          points: computePoints(c),
+        });
+      }
+    } catch (e) { /* keep trying */ }
+  }
+
+  if (pool.length < n) throw new Error(`Only found ${pool.length} usable characters. Try again?`);
+
+  // Shuffle, take n
+  shuffle(pool);
+  return pool.slice(0, n);
+}
+function computePoints(c) {
+  // Weighted popularity score
+  const f = c.films?.length || 0;
+  const s = c.shortFilms?.length || 0;
+  const t = c.tvShows?.length || 0;
+  const v = c.videoGames?.length || 0;
+  const p = c.parkAttractions?.length || 0;
+  return f * 3 + t * 2 + s * 1 + v * 1 + p * 2;
+}
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+}
+
+// ============================================================
+//  START GAME
+// ============================================================
+async function startGame() {
+  // Validate names
+  const names = setup.players.map(n => (n || '').trim()).filter(Boolean);
+  if (names.length < 2) { alert('Need at least 2 players with names.'); return; }
+  setup.players = names;
+  goto('loading');
+  try {
+    const chars = await fetchCharacters(settings.charsPerGame);
+    game = {
+      players: names.map((n, i) => ({
+        index: i, name: n, budget: settings.budget, team: [],
+      })),
+      characters: chars,
+      round: 0,
+      scoring: setup.scoring,
+      auction: null,
+    };
+    renderPlayerSlots();
+    goto('auction');
+    startRound();
+  } catch (e) {
+    alert(e.message || 'Failed to start game.');
+    goto('setup');
+  }
+}
+
+// ============================================================
+//  AUCTION / TIMER
+// ============================================================
+let timerHandle = null;
+let timerEndsAt = 0;
+let timerTotal = 0;
+
+function startRound() {
+  if (game.round >= game.characters.length) return endGame();
+  const char = game.characters[game.round];
+  game.auction = {
+    char,
+    currentBid: settings.startBid,
+    leaderIdx: -1, // -1 = nobody
+  };
+  document.getElementById('round-info').textContent = `Round ${game.round + 1} / ${game.characters.length}`;
+  document.getElementById('char-img').style.backgroundImage = `url("${char.imageUrl}")`;
+  document.getElementById('char-name').textContent = char.name;
+  const meta = [];
+  if (char.films.length) meta.push(`${char.films.length} film${char.films.length>1?'s':''}`);
+  if (char.tvShows.length) meta.push(`${char.tvShows.length} show${char.tvShows.length>1?'s':''}`);
+  document.getElementById('char-meta').textContent = meta.join(' · ');
+  updateBidDisplay();
+  updatePlayerStates();
+  startTimer(settings.timerInit);
+}
+
+function startTimer(seconds) {
+  stopTimer();
+  timerTotal = seconds;
+  timerEndsAt = performance.now() + seconds * 1000;
+  tickTimer();
+  timerHandle = setInterval(tickTimer, 100);
+}
+function stopTimer() {
+  if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
+}
+function tickTimer() {
+  const remain = Math.max(0, timerEndsAt - performance.now());
+  const sec = Math.ceil(remain / 1000);
+  document.getElementById('timer-text').textContent = sec;
+  const pct = remain / (timerTotal * 1000);
+  document.getElementById('timer-bar').setAttribute('stroke-dashoffset', String(100 - pct * 100));
+  const bar = document.getElementById('timer-bar');
+  if (sec <= 3) bar.setAttribute('stroke', '#ff6b6b');
+  else if (sec <= 5) bar.setAttribute('stroke', '#ffd54a');
+  else bar.setAttribute('stroke', '#5ee2a0');
+  if (remain <= 0) {
+    stopTimer();
+    finalizeAuction();
+  }
+}
+
+function placeBid(playerIdx) {
+  const a = game.auction;
+  if (!a) return;
+  const player = game.players[playerIdx];
+  // If nobody has bid yet, first bidder pays the startBid (or +increment if startBid is 0)
+  let nextBid;
+  if (a.leaderIdx === -1) {
+    nextBid = Math.max(settings.startBid, settings.increment);
+  } else {
+    if (a.leaderIdx === playerIdx) return; // can't outbid self
+    nextBid = a.currentBid + settings.increment;
+  }
+  if (player.budget < nextBid) return; // can't afford
+  a.currentBid = nextBid;
+  a.leaderIdx = playerIdx;
+  updateBidDisplay(true);
+  updatePlayerStates();
+  startTimer(settings.timerReset);
+}
+
+function updateBidDisplay(pulse) {
+  const a = game.auction;
+  document.getElementById('bid-amount').textContent = `$${a.currentBid}`;
+  document.getElementById('bid-leader').textContent =
+    a.leaderIdx === -1 ? 'No bids yet' : `Leader: ${game.players[a.leaderIdx].name}`;
+  if (pulse) {
+    const el = document.getElementById('bid-amount');
+    el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse');
+  }
+}
+
+function finalizeAuction() {
+  const a = game.auction;
+  if (!a) return;
+  if (a.leaderIdx === -1) {
+    document.getElementById('sold-title').textContent = 'No Sale';
+    document.getElementById('sold-amount').textContent = '—';
+    document.getElementById('sold-detail').textContent = `${a.char.name} goes unsold.`;
+  } else {
+    const winner = game.players[a.leaderIdx];
+    winner.budget -= a.currentBid;
+    winner.team.push({ ...a.char, paid: a.currentBid });
+    document.getElementById('sold-title').textContent = 'SOLD!';
+    document.getElementById('sold-amount').textContent = `$${a.currentBid}`;
+    document.getElementById('sold-detail').textContent = `${a.char.name} → ${winner.name}`;
+  }
+  goto('sold');
+}
+
+function nextRound() {
+  game.round++;
+  if (game.round >= game.characters.length) return endGame();
+  // If nobody can bid anymore, just end
+  const canBid = game.players.some(p => p.budget >= Math.max(settings.startBid, settings.increment));
+  if (!canBid) return endGame();
+  goto('auction');
+  startRound();
+}
+
+// ============================================================
+//  PLAYER SLOT LAYOUT
+// ============================================================
+// We position N player panels around the central stage, each rotated to face
+// outward (so a player sitting on that edge reads it right-side up).
+function renderPlayerSlots() {
+  // Clean existing
+  document.querySelectorAll('#auction .player').forEach(el => el.remove());
+  const n = game.players.length;
+  const positions = layoutPositions(n);
+  positions.forEach((pos, i) => {
+    const el = document.createElement('div');
+    el.className = 'player';
+    el.id = `player-${i}`;
+    el.style.left = pos.left;
+    el.style.top = pos.top;
+    el.style.width = pos.width;
+    el.style.height = pos.height;
+    el.style.transform = `translate(${pos.tx}, ${pos.ty}) rotate(${pos.rot}deg)`;
+    el.innerHTML = `
+      <div class="name"></div>
+      <div class="budget"></div>
+      <button class="bid-btn">BID +$${settings.increment}</button>
+    `;
+    el.querySelector('.bid-btn').onclick = () => placeBid(i);
+    document.getElementById('auction').appendChild(el);
+  });
+  updatePlayerStates();
+}
+
+function layoutPositions(n) {
+  // Returns array of { left, top, width, height, tx, ty, rot } strings.
+  // We split the screen into edge zones. The stage occupies the middle.
+  // Orientation:
+  //   bottom player  → rot 0   (text reads facing down edge)
+  //   right player   → rot 90  (text reads from right edge)
+  //   top player     → rot 180 (text reads from top edge)
+  //   left player    → rot 270 (or -90)
+  // Positions are CSS values for left/top of the (un-rotated) box; we
+  // translate so the rotation pivots correctly.
+  const W = '100vw', H = '100vh';
+  // We define each panel with its center point (cx, cy in vw/vh) and a base
+  // width/height, then rotate.
+  function p(cx, cy, w, h, rot) {
+    return {
+      left: `calc(${cx} - ${w}/2)`,
+      top: `calc(${cy} - ${h}/2)`,
+      width: w, height: h,
+      tx: '0', ty: '0',
+      rot,
+    };
+  }
+  if (n === 2) {
+    return [
+      p('50vw', 'calc(100vh - 70px)', '70vw', '110px', 0),
+      p('50vw', '70px', '70vw', '110px', 180),
+    ];
+  }
+  if (n === 3) {
+    return [
+      p('50vw', 'calc(100vh - 70px)', '60vw', '110px', 0),
+      p('calc(100vw - 70px)', '50vh', '60vh', '110px', 90),
+      p('70px', '50vh', '60vh', '110px', -90),
+    ];
+  }
+  if (n === 4) {
+    return [
+      p('50vw', 'calc(100vh - 70px)', '60vw', '110px', 0),
+      p('calc(100vw - 70px)', '50vh', '60vh', '110px', 90),
+      p('50vw', '70px', '60vw', '110px', 180),
+      p('70px', '50vh', '60vh', '110px', -90),
+    ];
+  }
+  if (n === 5) {
+    return [
+      p('30vw', 'calc(100vh - 70px)', '40vw', '110px', 0),
+      p('70vw', 'calc(100vh - 70px)', '40vw', '110px', 0),
+      p('calc(100vw - 70px)', '50vh', '50vh', '110px', 90),
+      p('50vw', '70px', '50vw', '110px', 180),
+      p('70px', '50vh', '50vh', '110px', -90),
+    ];
+  }
+  // 6
+  return [
+    p('30vw', 'calc(100vh - 70px)', '38vw', '100px', 0),
+    p('70vw', 'calc(100vh - 70px)', '38vw', '100px', 0),
+    p('calc(100vw - 65px)', '50vh', '50vh', '100px', 90),
+    p('30vw', '70px', '38vw', '100px', 180),
+    p('70vw', '70px', '38vw', '100px', 180),
+    p('65px', '50vh', '50vh', '100px', -90),
+  ];
+}
+
+function updatePlayerStates() {
+  const a = game.auction;
+  game.players.forEach((p, i) => {
+    const el = document.getElementById(`player-${i}`);
+    if (!el) return;
+    el.querySelector('.name').textContent = p.name;
+    el.querySelector('.budget').textContent = `$${p.budget}`;
+    const nextBid = a
+      ? (a.leaderIdx === -1 ? Math.max(settings.startBid, settings.increment) : a.currentBid + settings.increment)
+      : 0;
+    const btn = el.querySelector('.bid-btn');
+    const isLeader = a && a.leaderIdx === i;
+    const canAfford = p.budget >= nextBid;
+    btn.disabled = !a || isLeader || !canAfford;
+    btn.textContent = isLeader ? 'LEADING' : (canAfford ? `BID $${nextBid}` : 'Broke');
+    el.classList.toggle('leading', isLeader);
+    el.classList.toggle('broke', !canAfford && !isLeader);
+  });
+}
+
+// ============================================================
+//  END GAME & RESULTS
+// ============================================================
+function endGame() {
+  stopTimer();
+  if (game.scoring === 'voting') {
+    showVoting();
+  } else {
+    showPointResults();
+  }
+}
+
+function showPointResults() {
+  const totals = game.players.map(p => ({
+    player: p,
+    total: p.team.reduce((s, c) => s + c.points, 0),
+  }));
+  totals.sort((a, b) => b.total - a.total);
+  const max = totals[0]?.total ?? 0;
+  document.getElementById('results-title').textContent = 'Final Standings';
+  document.getElementById('results-sub').textContent = 'Total popularity points';
+  renderTeams(totals.map(t => ({
+    player: t.player,
+    badge: `${t.total} pts`,
+    isWinner: t.total === max && max > 0,
+  })));
+  goto('results');
+}
+
+let votes = {}; // playerIdx -> votedForIdx
+function showVoting() {
+  votes = {};
+  document.getElementById('results-title').textContent = 'Vote for the Best Team';
+  document.getElementById('results-sub').textContent = 'Each player votes once. You can\'t vote for yourself.';
+  renderTeams(game.players.map(p => ({
+    player: p,
+    badge: '',
+    showVote: true,
+  })));
+  goto('results');
+}
+function castVote(voterIdx, forIdx) {
+  if (voterIdx === forIdx) return;
+  votes[voterIdx] = forIdx;
+  // re-render to mark buttons; if everyone has voted, tally
+  document.querySelectorAll('.team-card').forEach((card, tIdx) => {
+    card.querySelectorAll('.vote-btns button').forEach(btn => {
+      const v = parseInt(btn.dataset.voter, 10);
+      btn.classList.toggle('voted', votes[v] === tIdx);
+    });
+  });
+  if (Object.keys(votes).length === game.players.length) {
+    tallyVotes();
+  }
+}
+function tallyVotes() {
+  const counts = game.players.map(() => 0);
+  Object.values(votes).forEach(idx => { counts[idx]++; });
+  const max = Math.max(...counts);
+  document.getElementById('results-title').textContent = 'And the Winner Is…';
+  document.getElementById('results-sub').textContent = '';
+  renderTeams(game.players.map((p, i) => ({
+    player: p,
+    badge: `${counts[i]} vote${counts[i] === 1 ? '' : 's'}`,
+    isWinner: counts[i] === max && max > 0,
+  })));
+}
+
+function renderTeams(items) {
+  const grid = document.getElementById('results-grid');
+  grid.innerHTML = '';
+  items.forEach((it, tIdx) => {
+    const card = document.createElement('div');
+    card.className = 'team-card' + (it.isWinner ? ' winner' : '');
+    const totalPaid = it.player.team.reduce((s, c) => s + c.paid, 0);
+    const charsHtml = it.player.team.map(c => `
+      <div class="char" title="${escapeHtml(c.name)} — $${c.paid}">
+        <img src="${c.imageUrl}" alt="" onerror="this.style.display='none'" />
+        <span>${escapeHtml(c.name)}</span>
+      </div>
+    `).join('') || '<div class="char">No characters</div>';
+    let voteHtml = '';
+    if (it.showVote) {
+      voteHtml = `<div class="vote-btns">${
+        game.players.map((voter, vi) => vi === tIdx ? '' : `
+          <button data-voter="${vi}" onclick="castVote(${vi}, ${tIdx})">${escapeHtml(voter.name)} votes</button>
+        `).join('')
+      }</div>`;
+    }
+    card.innerHTML = `
+      <h3>${escapeHtml(it.player.name)} ${it.badge ? `<span style="float:right;color:var(--accent)">${it.badge}</span>` : ''}</h3>
+      <div style="font-size:12px;color:var(--muted)">Spent $${totalPaid} · $${it.player.budget} left</div>
+      <div class="roster">${charsHtml}</div>
+      ${voteHtml}
+    `;
+    grid.appendChild(card);
+  });
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// init
+refreshSetup();
+</script>
+</body>
+</html>
