@@ -476,12 +476,12 @@
 // ============================================================
 const CURATED_CHARACTERS = [
   // Mickey & Friends
-  { name: 'Mickey Mouse', film: 'Steamboat Willie', points: 20 },
-  { name: 'Minnie Mouse', film: 'Mickey & Friends', points: 15 },
-  { name: 'Donald Duck', film: 'Mickey & Friends', points: 15 },
-  { name: 'Daisy Duck', film: 'Mickey & Friends', points: 10 },
-  { name: 'Goofy', film: 'Mickey & Friends', points: 15 },
-  { name: 'Pluto', film: 'Mickey & Friends', points: 12 },
+  { name: 'Mickey Mouse', film: 'Steamboat Willie', points: 20, verifyFilm: false },
+  { name: 'Minnie Mouse', film: 'Mickey & Friends', points: 15, verifyFilm: false },
+  { name: 'Donald Duck', film: 'Mickey & Friends', points: 15, verifyFilm: false },
+  { name: 'Daisy Duck', film: 'Mickey & Friends', points: 10, verifyFilm: false },
+  { name: 'Goofy', film: 'Mickey & Friends', points: 15, verifyFilm: false },
+  { name: 'Pluto', film: 'Mickey & Friends', points: 12, verifyFilm: false },
   // Classic films
   { name: 'Snow White', film: 'Snow White', points: 13 },
   { name: 'Cinderella', film: 'Cinderella', points: 15 },
@@ -807,9 +807,14 @@ async function fetchItems(n, gameType) {
 }
 
 async function lookupCharacterImage(item) {
-  // Use the Disney API for the clean character renders. To avoid the
-  // wrong-character problem we (a) only accept exact name matches, and
-  // (b) when multiple candidates share the name, disambiguate by film.
+  // Use the Disney API for clean character renders, but be strict: require
+  // BOTH the exact name AND a film/show credit that matches our curated
+  // film. The API sometimes has a single record under a name that's
+  // actually a different character (e.g. a "Miguel" with concept art that
+  // isn't from Coco), so we can't just trust a unique name match.
+  //
+  // Set `verifyFilm: false` on a curated entry to skip the film check
+  // (used for Mickey & Friends generics where no specific film applies).
   try {
     const r = await fetch(`https://api.disneyapi.dev/character?name=${encodeURIComponent(item.name)}`);
     if (!r.ok) return null;
@@ -818,31 +823,48 @@ async function lookupCharacterImage(item) {
     const lc = item.name.toLowerCase();
     const exacts = arr.filter(c => c.imageUrl && c.name && c.name.toLowerCase() === lc);
     if (exacts.length === 0) return null;
-    if (exacts.length === 1) return exacts[0].imageUrl;
-    if (item.film) {
+
+    if (item.film && item.verifyFilm !== false) {
       const f = item.film.toLowerCase();
-      const filmMatch = exacts.find(c => {
+      const filmMatched = exacts.filter(c => {
         const credits = [...(c.films || []), ...(c.tvShows || []), ...(c.shortFilms || [])];
         return credits.some(cr => {
           const a = (cr || '').toLowerCase();
           return a && (a.includes(f) || f.includes(a));
         });
       });
-      if (filmMatch) return filmMatch.imageUrl;
+      if (filmMatched.length > 0) return filmMatched[0].imageUrl;
+      // Name matched but the film doesn't — almost certainly the wrong
+      // character. Refuse so the stage shows the name-card fallback.
+      return null;
     }
-    // Multiple candidates and we couldn't tell them apart — refuse rather
-    // than risk the wrong picture.
-    return null;
+
+    return exacts[0].imageUrl;
   } catch {
     return null;
   }
 }
 
 async function lookupAttractionImage(item) {
-  // Wikipedia pageimages API. origin=* enables anonymous CORS.
-  // redirects=1 follows article redirects (e.g. "Soarin" → "Soarin'").
+  // Try the curated Wikipedia article title first; if that page has no image
+  // (or the title doesn't match an actual article), fall back to a Wikipedia
+  // search so a slightly-off curated title still finds something.
   const title = item.wiki || item.name;
-  const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&piprop=original|thumbnail&pithumbsize=600&redirects=1&titles=${encodeURIComponent(title)}&origin=*`;
+  let img = await wikiImageByTitle(title);
+  if (img) return img;
+  img = await wikiImageBySearch(`${item.name} ${item.park} Disney attraction`);
+  return img;
+}
+
+async function wikiImageByTitle(title) {
+  const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&piprop=original%7Cthumbnail&pithumbsize=600&redirects=1&titles=${encodeURIComponent(title)}&origin=*`;
+  return wikiExtractImage(url);
+}
+async function wikiImageBySearch(query) {
+  const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=1&prop=pageimages&piprop=original%7Cthumbnail&pithumbsize=600&origin=*`;
+  return wikiExtractImage(url);
+}
+async function wikiExtractImage(url) {
   try {
     const r = await fetch(url);
     if (!r.ok) return null;
