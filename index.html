@@ -812,11 +812,12 @@ async function lookupCharacterImage(item) {
     if (!r.ok) return null;
     const j = await r.json();
     const arr = Array.isArray(j.data) ? j.data : (j.data ? [j.data] : []);
+    // STRICT: only accept an exact (case-insensitive) name match. The API's
+    // name search returns partial matches, so falling back to "any result"
+    // would give us the wrong character (e.g. "Belle" → "Bellwether").
     const lc = item.name.toLowerCase();
     const exact = arr.find(c => c.imageUrl && c.name && c.name.toLowerCase() === lc);
-    if (exact) return exact.imageUrl;
-    const any = arr.find(c => c.imageUrl);
-    return any ? any.imageUrl : null;
+    return exact ? exact.imageUrl : null;
   } catch {
     return null;
   }
