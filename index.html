@@ -132,11 +132,11 @@
     position: absolute;
     left: 50%; top: 50%;
     transform: translate(-50%, -50%);
-    width: min(46vmin, 380px);
-    aspect-ratio: 1 / 1.25;
+    width: min(60vw, 50vh, 340px);
+    aspect-ratio: 1 / 1.3;
     background: linear-gradient(160deg, #2c3672, #1b2350);
     border-radius: 22px;
-    padding: 14px;
+    padding: 12px;
     display: flex; flex-direction: column; align-items: center;
     box-shadow: 0 0 60px rgba(255, 213, 74, 0.15), 0 0 0 2px #3a4a9e inset;
     z-index: 5;
@@ -256,20 +256,28 @@
     transform: scale(0.96);
   }
 
-  .top-bar {
+  .round-chip {
     position: absolute;
-    top: 8px; left: 50%; transform: translateX(-50%);
-    z-index: 10;
-    background: rgba(11, 16, 38, 0.75);
-    backdrop-filter: blur(8px);
-    padding: 6px 14px;
-    border-radius: 999px;
-    font-size: 13px;
+    top: -10px; right: 12px;
+    background: var(--bg);
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 11px;
     color: var(--muted);
-    display: flex; gap: 12px; align-items: center;
+    box-shadow: 0 0 0 2px #3a4a9e;
+    z-index: 6;
   }
-  .top-bar button {
-    background: transparent; color: var(--muted); padding: 4px 8px; font-size: 13px;
+  .quit-btn {
+    position: absolute;
+    top: 6px; right: 6px;
+    z-index: 21;
+    background: rgba(11, 16, 38, 0.7);
+    backdrop-filter: blur(6px);
+    color: var(--muted);
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 999px;
   }
 
   /* ========== Modal / overlay ========== */
@@ -409,16 +417,14 @@
 
 <!-- ========== Auction ========== -->
 <div id="auction" class="screen">
-  <div class="top-bar">
-    <span id="round-info">Round 1 / 10</span>
-    <button onclick="confirmQuit()">Quit</button>
-  </div>
+  <button class="quit-btn" onclick="confirmQuit()">Quit</button>
   <div class="stage" id="stage">
     <svg class="timer-ring" viewBox="0 0 100 100" preserveAspectRatio="none">
       <rect x="2" y="2" width="96" height="96" rx="10" ry="10" stroke="#2c3672" />
       <rect id="timer-bar" x="2" y="2" width="96" height="96" rx="10" ry="10" stroke="var(--accent)" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0" />
     </svg>
     <div class="timer-text" id="timer-text">15</div>
+    <div class="round-chip" id="round-info">Round 1 / 10</div>
     <div class="char-img" id="char-img">
       <img id="char-img-el" referrerpolicy="no-referrer" alt="" />
       <div class="fallback" id="char-img-fallback" style="display:none">Image unavailable</div>
@@ -935,44 +941,49 @@ function layoutPositions(n) {
       rot,
     };
   }
+  // Distance of panel center from screen edge.
+  // Panels are 100px thick; placing center at 80px leaves a 30px buffer from
+  // the screen edge so rotated BID buttons aren't clipped.
+  const EDGE = 80;
+  const T = 100; // panel thickness
   if (n === 2) {
     return [
-      p('50vw', 'calc(100vh - 70px)', '70vw', '110px', 0),
-      p('50vw', '70px', '70vw', '110px', 180),
+      p('50vw', `calc(100vh - ${EDGE}px)`, '70vw', `${T}px`, 0),
+      p('50vw', `${EDGE}px`, '70vw', `${T}px`, 180),
     ];
   }
   if (n === 3) {
     return [
-      p('50vw', 'calc(100vh - 70px)', '60vw', '110px', 0),
-      p('calc(100vw - 70px)', '50vh', '60vh', '110px', 90),
-      p('70px', '50vh', '60vh', '110px', -90),
+      p('50vw', `calc(100vh - ${EDGE}px)`, '55vw', `${T}px`, 0),
+      p(`calc(100vw - ${EDGE}px)`, '50vh', '55vh', `${T}px`, 90),
+      p(`${EDGE}px`, '50vh', '55vh', `${T}px`, -90),
     ];
   }
   if (n === 4) {
     return [
-      p('50vw', 'calc(100vh - 70px)', '60vw', '110px', 0),
-      p('calc(100vw - 70px)', '50vh', '60vh', '110px', 90),
-      p('50vw', '70px', '60vw', '110px', 180),
-      p('70px', '50vh', '60vh', '110px', -90),
+      p('50vw', `calc(100vh - ${EDGE}px)`, '55vw', `${T}px`, 0),
+      p(`calc(100vw - ${EDGE}px)`, '50vh', '55vh', `${T}px`, 90),
+      p('50vw', `${EDGE}px`, '55vw', `${T}px`, 180),
+      p(`${EDGE}px`, '50vh', '55vh', `${T}px`, -90),
     ];
   }
   if (n === 5) {
     return [
-      p('30vw', 'calc(100vh - 70px)', '40vw', '110px', 0),
-      p('70vw', 'calc(100vh - 70px)', '40vw', '110px', 0),
-      p('calc(100vw - 70px)', '50vh', '50vh', '110px', 90),
-      p('50vw', '70px', '50vw', '110px', 180),
-      p('70px', '50vh', '50vh', '110px', -90),
+      p('27vw', `calc(100vh - ${EDGE}px)`, '40vw', `${T}px`, 0),
+      p('73vw', `calc(100vh - ${EDGE}px)`, '40vw', `${T}px`, 0),
+      p(`calc(100vw - ${EDGE}px)`, '50vh', '45vh', `${T}px`, 90),
+      p('50vw', `${EDGE}px`, '50vw', `${T}px`, 180),
+      p(`${EDGE}px`, '50vh', '45vh', `${T}px`, -90),
     ];
   }
   // 6
   return [
-    p('30vw', 'calc(100vh - 70px)', '38vw', '100px', 0),
-    p('70vw', 'calc(100vh - 70px)', '38vw', '100px', 0),
-    p('calc(100vw - 65px)', '50vh', '50vh', '100px', 90),
-    p('30vw', '70px', '38vw', '100px', 180),
-    p('70vw', '70px', '38vw', '100px', 180),
-    p('65px', '50vh', '50vh', '100px', -90),
+    p('27vw', `calc(100vh - ${EDGE}px)`, '40vw', `${T}px`, 0),
+    p('73vw', `calc(100vh - ${EDGE}px)`, '40vw', `${T}px`, 0),
+    p(`calc(100vw - ${EDGE}px)`, '50vh', '45vh', `${T}px`, 90),
+    p('27vw', `${EDGE}px`, '40vw', `${T}px`, 180),
+    p('73vw', `${EDGE}px`, '40vw', `${T}px`, 180),
+    p(`${EDGE}px`, '50vh', '45vh', `${T}px`, -90),
   ];
 }
 
