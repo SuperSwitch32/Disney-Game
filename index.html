@@ -394,10 +394,16 @@
     <div id="player-inputs"></div>
     <button class="btn-mini" onclick="addPlayerInput()">+ Add Player</button>
 
+    <h2>Auction Items</h2>
+    <div class="seg" id="gametype-seg">
+      <button data-val="characters" onclick="setGameType('characters')">Characters</button>
+      <button data-val="attractions" onclick="setGameType('attractions')">Park Attractions</button>
+    </div>
+
     <h2>Scoring</h2>
     <div class="seg" id="scoring-seg">
       <button data-val="voting" onclick="setScoring('voting')">Player voting</button>
-      <button data-val="points" onclick="setScoring('points')">Character points</button>
+      <button data-val="points" onclick="setScoring('points')" id="points-btn">Item points</button>
     </div>
     <div class="sub" id="scoring-desc" style="margin-top: 8px; font-size: 13px;"></div>
 
@@ -584,6 +590,67 @@ const CURATED_CHARACTERS = [
 ];
 
 // ============================================================
+//  CURATED ATTRACTIONS LIST
+//   { name, park, points, wiki? }
+//   wiki = Wikipedia article title for image lookup (defaults to name)
+// ============================================================
+const CURATED_ATTRACTIONS = [
+  // Magic Kingdom (Walt Disney World)
+  { name: 'Cinderella Castle', park: 'Magic Kingdom', points: 18, wiki: 'Cinderella Castle' },
+  { name: 'Space Mountain', park: 'Magic Kingdom', points: 18, wiki: 'Space Mountain (Magic Kingdom)' },
+  { name: 'Seven Dwarfs Mine Train', park: 'Magic Kingdom', points: 15, wiki: 'Seven Dwarfs Mine Train' },
+  { name: 'TRON Lightcycle / Run', park: 'Magic Kingdom', points: 16, wiki: 'Tron Lightcycle Power Run' },
+  { name: 'Big Thunder Mountain Railroad', park: 'Magic Kingdom', points: 16, wiki: 'Big Thunder Mountain Railroad' },
+  { name: 'Pirates of the Caribbean', park: 'Magic Kingdom', points: 17, wiki: 'Pirates of the Caribbean (attraction)' },
+  { name: 'Haunted Mansion', park: 'Magic Kingdom', points: 18, wiki: 'The Haunted Mansion' },
+  { name: 'It\'s a Small World', park: 'Magic Kingdom', points: 14, wiki: "It's a Small World" },
+  { name: 'Peter Pan\'s Flight', park: 'Magic Kingdom', points: 14, wiki: "Peter Pan's Flight" },
+  { name: 'Jungle Cruise', park: 'Magic Kingdom', points: 15, wiki: 'Jungle Cruise' },
+  { name: 'Dumbo the Flying Elephant', park: 'Magic Kingdom', points: 12, wiki: 'Dumbo the Flying Elephant' },
+  { name: 'Mad Tea Party', park: 'Magic Kingdom', points: 10, wiki: 'Mad Tea Party' },
+  { name: 'Tiana\'s Bayou Adventure', park: 'Magic Kingdom', points: 13, wiki: "Tiana's Bayou Adventure" },
+  // EPCOT
+  { name: 'Spaceship Earth', park: 'EPCOT', points: 15, wiki: 'Spaceship Earth (Epcot)' },
+  { name: 'Test Track', park: 'EPCOT', points: 13, wiki: 'Test Track' },
+  { name: 'Guardians of the Galaxy: Cosmic Rewind', park: 'EPCOT', points: 16, wiki: 'Guardians of the Galaxy: Cosmic Rewind' },
+  { name: 'Frozen Ever After', park: 'EPCOT', points: 13, wiki: 'Frozen Ever After' },
+  { name: 'Soarin\' Around the World', park: 'EPCOT', points: 14, wiki: 'Soarin' },
+  { name: 'Mission: SPACE', park: 'EPCOT', points: 10, wiki: 'Mission: Space' },
+  { name: 'Remy\'s Ratatouille Adventure', park: 'EPCOT', points: 11, wiki: "Remy's Ratatouille Adventure" },
+  // Hollywood Studios
+  { name: 'Twilight Zone Tower of Terror', park: 'Hollywood Studios', points: 18, wiki: 'The Twilight Zone Tower of Terror' },
+  { name: 'Rock \'n\' Roller Coaster', park: 'Hollywood Studios', points: 14, wiki: "Rock 'n' Roller Coaster Starring Aerosmith" },
+  { name: 'Star Wars: Rise of the Resistance', park: 'Hollywood Studios', points: 19, wiki: 'Star Wars: Rise of the Resistance' },
+  { name: 'Millennium Falcon: Smugglers Run', park: 'Hollywood Studios', points: 14, wiki: "Millennium Falcon: Smugglers Run" },
+  { name: 'Mickey & Minnie\'s Runaway Railway', park: 'Hollywood Studios', points: 13, wiki: "Mickey & Minnie's Runaway Railway" },
+  { name: 'Slinky Dog Dash', park: 'Hollywood Studios', points: 12, wiki: 'Slinky Dog Dash' },
+  { name: 'Toy Story Mania!', park: 'Hollywood Studios', points: 11, wiki: 'Toy Story Midway Mania!' },
+  // Animal Kingdom
+  { name: 'Avatar Flight of Passage', park: 'Animal Kingdom', points: 19, wiki: 'Avatar Flight of Passage' },
+  { name: 'Expedition Everest', park: 'Animal Kingdom', points: 15, wiki: 'Expedition Everest' },
+  { name: 'Kilimanjaro Safaris', park: 'Animal Kingdom', points: 12, wiki: 'Kilimanjaro Safaris' },
+  { name: 'Na\'vi River Journey', park: 'Animal Kingdom', points: 10, wiki: "Na'vi River Journey" },
+  { name: 'DINOSAUR', park: 'Animal Kingdom', points: 9, wiki: 'Dinosaur (Disney\'s Animal Kingdom)' },
+  { name: 'Kali River Rapids', park: 'Animal Kingdom', points: 9, wiki: 'Kali River Rapids' },
+  // Disneyland (California)
+  { name: 'Sleeping Beauty Castle', park: 'Disneyland', points: 17, wiki: 'Sleeping Beauty Castle' },
+  { name: 'Indiana Jones Adventure', park: 'Disneyland', points: 16, wiki: 'Indiana Jones Adventure' },
+  { name: 'Matterhorn Bobsleds', park: 'Disneyland', points: 13, wiki: 'Matterhorn Bobsleds' },
+  { name: 'Star Tours', park: 'Disneyland', points: 12, wiki: 'Star Tours – The Adventures Continue' },
+  { name: 'Mr. Toad\'s Wild Ride', park: 'Disneyland', points: 10, wiki: "Mr. Toad's Wild Ride" },
+  { name: 'Roger Rabbit\'s Car Toon Spin', park: 'Disneyland', points: 9, wiki: "Roger Rabbit's Car Toon Spin" },
+  { name: 'Buzz Lightyear Astro Blasters', park: 'Disneyland', points: 10, wiki: 'Buzz Lightyear Astro Blasters' },
+  { name: 'Finding Nemo Submarine Voyage', park: 'Disneyland', points: 9, wiki: 'Finding Nemo Submarine Voyage' },
+  // Disney California Adventure
+  { name: 'Radiator Springs Racers', park: 'California Adventure', points: 16, wiki: 'Radiator Springs Racers' },
+  { name: 'Soarin\' Over California', park: 'California Adventure', points: 13, wiki: 'Soarin' },
+  { name: 'Guardians of the Galaxy – Mission: BREAKOUT!', park: 'California Adventure', points: 14, wiki: 'Guardians of the Galaxy – Mission: Breakout!' },
+  { name: 'WEB SLINGERS: A Spider-Man Adventure', park: 'California Adventure', points: 11, wiki: 'Web Slingers: A Spider-Man Adventure' },
+  { name: 'Incredicoaster', park: 'California Adventure', points: 12, wiki: 'Incredicoaster' },
+  { name: 'Toy Story Midway Mania!', park: 'California Adventure', points: 11, wiki: 'Toy Story Midway Mania!' },
+];
+
+// ============================================================
 //  STATE
 // ============================================================
 const DEFAULTS = {
@@ -598,6 +665,7 @@ let settings = loadSettings();
 let setup = {
   players: ['Player 1', 'Player 2'],
   scoring: 'voting', // or 'points'
+  gameType: 'characters', // or 'attractions'
 };
 let game = null;
 
@@ -653,6 +721,7 @@ function confirmQuit() {
 // ============================================================
 function refreshSetup() {
   renderPlayerInputs();
+  setGameType(setup.gameType);
   setScoring(setup.scoring);
 }
 function renderPlayerInputs() {
@@ -687,54 +756,88 @@ function setScoring(mode) {
   document.querySelectorAll('#scoring-seg button').forEach(b => {
     b.classList.toggle('on', b.dataset.val === mode);
   });
+  const itemWord = setup.gameType === 'attractions' ? 'attraction' : 'character';
   document.getElementById('scoring-desc').textContent =
     mode === 'voting'
-      ? 'After the auction, players vote for the best team (can\'t vote for themselves).'
-      : 'Each character has a popularity score (from films, shows, games, attractions). Highest total wins.';
+      ? 'After the auction, players vote for the best collection (can\'t vote for themselves).'
+      : `Each ${itemWord} has a popularity score. Highest total wins.`;
+}
+function setGameType(type) {
+  setup.gameType = type;
+  document.querySelectorAll('#gametype-seg button').forEach(b => {
+    b.classList.toggle('on', b.dataset.val === type);
+  });
+  // Refresh scoring description with the new item word.
+  setScoring(setup.scoring);
 }
 
 // ============================================================
-//  CHARACTERS (curated list + Disney API for images)
+//  ITEMS (curated list + image lookup)
+//  Returns an array of { name, subtitle, points, imageUrl }.
+//  - Characters use the Disney API for images.
+//  - Attractions use the Wikipedia pageimages API.
 // ============================================================
-async function fetchCharacters(n) {
-  if (n > CURATED_CHARACTERS.length) n = CURATED_CHARACTERS.length;
-  const pool = [...CURATED_CHARACTERS];
+async function fetchItems(n, gameType) {
+  const source = gameType === 'attractions' ? CURATED_ATTRACTIONS : CURATED_CHARACTERS;
+  const lookup = gameType === 'attractions' ? lookupAttractionImage : lookupCharacterImage;
+  const itemWord = gameType === 'attractions' ? 'attractions' : 'characters';
+  if (n > source.length) n = source.length;
+  const pool = [...source];
   shuffle(pool);
-  // Take a few extras as backups in case some image lookups fail.
   const picks = pool.slice(0, Math.min(n + 4, pool.length));
 
   const loadingEl = document.getElementById('loading-text');
-  loadingEl.textContent = `Looking up ${picks.length} characters…`;
+  loadingEl.textContent = `Looking up ${picks.length} ${itemWord}…`;
 
   let done = 0;
   const results = await Promise.all(picks.map(async (c) => {
-    const imageUrl = await lookupImage(c.name);
+    const imageUrl = await lookup(c);
     done++;
-    loadingEl.textContent = `Looking up characters… ${done}/${picks.length}`;
-    return { name: c.name, film: c.film, points: c.points, imageUrl };
+    loadingEl.textContent = `Looking up ${itemWord}… ${done}/${picks.length}`;
+    const subtitle = gameType === 'attractions' ? c.park : c.film;
+    return { name: c.name, subtitle, points: c.points, imageUrl };
   }));
 
-  // Prefer ones with an image; fill remainder with image-less if needed.
   const withImg = results.filter(r => r.imageUrl);
   const withoutImg = results.filter(r => !r.imageUrl);
   const final = withImg.slice(0, n);
   while (final.length < n && withoutImg.length) final.push(withoutImg.shift());
-  if (final.length < n) throw new Error(`Could not load enough characters (got ${final.length}).`);
+  if (final.length < n) throw new Error(`Could not load enough ${itemWord} (got ${final.length}).`);
   return final;
 }
 
-async function lookupImage(name) {
+async function lookupCharacterImage(item) {
   try {
-    const r = await fetch(`https://api.disneyapi.dev/character?name=${encodeURIComponent(name)}`);
+    const r = await fetch(`https://api.disneyapi.dev/character?name=${encodeURIComponent(item.name)}`);
     if (!r.ok) return null;
     const j = await r.json();
     const arr = Array.isArray(j.data) ? j.data : (j.data ? [j.data] : []);
-    // Prefer exact (case-insensitive) name match with an image.
-    const lc = name.toLowerCase();
+    const lc = item.name.toLowerCase();
     const exact = arr.find(c => c.imageUrl && c.name && c.name.toLowerCase() === lc);
     if (exact) return exact.imageUrl;
     const any = arr.find(c => c.imageUrl);
     return any ? any.imageUrl : null;
+  } catch {
+    return null;
+  }
+}
+
+async function lookupAttractionImage(item) {
+  // Wikipedia pageimages API. origin=* enables anonymous CORS.
+  // redirects=1 follows article redirects (e.g. "Soarin" → "Soarin'").
+  const title = item.wiki || item.name;
+  const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&piprop=original|thumbnail&pithumbsize=600&redirects=1&titles=${encodeURIComponent(title)}&origin=*`;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    const j = await r.json();
+    const pages = j?.query?.pages || {};
+    for (const id in pages) {
+      const p = pages[id];
+      if (p.thumbnail?.source) return p.thumbnail.source;
+      if (p.original?.source) return p.original.source;
+    }
+    return null;
   } catch {
     return null;
   }
@@ -756,14 +859,15 @@ async function startGame() {
   setup.players = names;
   goto('loading');
   try {
-    const chars = await fetchCharacters(settings.charsPerGame);
+    const items = await fetchItems(settings.charsPerGame, setup.gameType);
     game = {
       players: names.map((n, i) => ({
         index: i, name: n, budget: settings.budget, team: [],
       })),
-      characters: chars,
+      characters: items,
       round: 0,
       scoring: setup.scoring,
+      gameType: setup.gameType,
       auction: null,
     };
     renderPlayerSlots();
@@ -798,7 +902,7 @@ function startRound() {
   imgEl.onerror = () => { imgEl.style.display = 'none'; fbEl.style.display = 'flex'; fbEl.textContent = char.name; };
   imgEl.src = char.imageUrl;
   document.getElementById('char-name').textContent = char.name;
-  document.getElementById('char-meta').textContent = char.film || '';
+  document.getElementById('char-meta').textContent = char.subtitle || '';
   updateBidDisplay();
   updatePlayerStates();
   startTimer(settings.timerInit);
@@ -1039,7 +1143,8 @@ function showPointResults() {
 let votes = {}; // playerIdx -> votedForIdx
 function showVoting() {
   votes = {};
-  document.getElementById('results-title').textContent = 'Vote for the Best Team';
+  const word = game.gameType === 'attractions' ? 'Lineup' : 'Team';
+  document.getElementById('results-title').textContent = `Vote for the Best ${word}`;
   document.getElementById('results-sub').textContent = 'Each player votes once. You can\'t vote for yourself.';
   renderTeams(game.players.map(p => ({
     player: p,

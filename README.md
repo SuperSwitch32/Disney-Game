@@ -29,11 +29,16 @@ Settings are saved in `localStorage`.
 - **Phone**: 2–4 players (panels on each edge).
 - **iPad / tablet**: comfortable up to 6 players.
 
-## Characters
+## What gets auctioned
 
-Drawn from a curated list of ~100 popular Disney / Pixar characters (Mickey, Elsa, Simba, Woody, Stitch, etc.). Each character has a hand-tuned popularity score used in "character points" scoring mode. Images are fetched from the public [Disney API](https://disneyapi.dev/) by name lookup, so the game needs internet to start. If an image can't be loaded for a specific character, the stage shows the character's name as a fallback.
+Two modes, picked on the setup screen:
 
-To customize the roster or point values, edit the `CURATED_CHARACTERS` array near the top of the `<script>` block in `index.html`.
+- **Characters** — ~100 popular Disney / Pixar characters (Mickey, Elsa, Simba, Woody, Stitch, etc.). Images come from the [Disney API](https://disneyapi.dev/).
+- **Park Attractions** — ~45 famous Disneyland and Walt Disney World rides (Space Mountain, Haunted Mansion, Rise of the Resistance, Flight of Passage, etc.). Images come from Wikipedia.
+
+Each item has a hand-tuned popularity score used in the "Item points" scoring mode. If an image can't be loaded for a specific item, the stage shows the name as a fallback. Needs internet to start a new game.
+
+To customize the rosters or point values, edit the `CURATED_CHARACTERS` and `CURATED_ATTRACTIONS` arrays near the top of the `<script>` block in `index.html`.
 
 ## Deploy
 
