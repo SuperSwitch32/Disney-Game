@@ -807,26 +807,31 @@ async function fetchItems(n, gameType) {
 }
 
 async function lookupCharacterImage(item) {
-  // Search Wikipedia with "<name> <film>" so we land on the article for the
-  // specific character (or the film article) instead of an unrelated page.
-  // The Disney API was returning wrong characters with the same name, so we
-  // use Wikipedia's search ranking + the film as context to pick correctly.
-  const query = item.film ? `${item.name} ${item.film}` : item.name;
-  return lookupWikipediaImageBySearch(query);
-}
-
-async function lookupWikipediaImageBySearch(query) {
-  const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=1&prop=pageimages&piprop=original|thumbnail&pithumbsize=600&origin=*`;
+  // Use the Disney API for the clean character renders. To avoid the
+  // wrong-character problem we (a) only accept exact name matches, and
+  // (b) when multiple candidates share the name, disambiguate by film.
   try {
-    const r = await fetch(url);
+    const r = await fetch(`https://api.disneyapi.dev/character?name=${encodeURIComponent(item.name)}`);
     if (!r.ok) return null;
     const j = await r.json();
-    const pages = j?.query?.pages || {};
-    for (const id in pages) {
-      const p = pages[id];
-      if (p.thumbnail?.source) return p.thumbnail.source;
-      if (p.original?.source) return p.original.source;
+    const arr = Array.isArray(j.data) ? j.data : (j.data ? [j.data] : []);
+    const lc = item.name.toLowerCase();
+    const exacts = arr.filter(c => c.imageUrl && c.name && c.name.toLowerCase() === lc);
+    if (exacts.length === 0) return null;
+    if (exacts.length === 1) return exacts[0].imageUrl;
+    if (item.film) {
+      const f = item.film.toLowerCase();
+      const filmMatch = exacts.find(c => {
+        const credits = [...(c.films || []), ...(c.tvShows || []), ...(c.shortFilms || [])];
+        return credits.some(cr => {
+          const a = (cr || '').toLowerCase();
+          return a && (a.includes(f) || f.includes(a));
+        });
+      });
+      if (filmMatch) return filmMatch.imageUrl;
     }
+    // Multiple candidates and we couldn't tell them apart — refuse rather
+    // than risk the wrong picture.
     return null;
   } catch {
     return null;
