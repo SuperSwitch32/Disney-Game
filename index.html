@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="referrer" content="no-referrer" />
 <title>Disney Auction</title>
 <style>
   :root {
@@ -145,10 +146,30 @@
     width: 100%;
     background: #0b1026;
     border-radius: 14px;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
     margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .stage .char-img img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+  .stage .char-img .fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 14px;
+    text-align: center;
+    padding: 12px;
   }
   .stage .char-name {
     font-size: 18px; font-weight: 700; text-align: center; line-height: 1.1;
@@ -398,7 +419,10 @@
       <rect id="timer-bar" x="2" y="2" width="96" height="96" rx="10" ry="10" stroke="var(--accent)" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0" />
     </svg>
     <div class="timer-text" id="timer-text">15</div>
-    <div class="char-img" id="char-img"></div>
+    <div class="char-img" id="char-img">
+      <img id="char-img-el" referrerpolicy="no-referrer" alt="" />
+      <div class="fallback" id="char-img-fallback" style="display:none">Image unavailable</div>
+    </div>
     <div class="char-name" id="char-name"></div>
     <div class="char-meta" id="char-meta"></div>
     <div class="bid-display">
@@ -662,7 +686,12 @@ function startRound() {
     leaderIdx: -1, // -1 = nobody
   };
   document.getElementById('round-info').textContent = `Round ${game.round + 1} / ${game.characters.length}`;
-  document.getElementById('char-img').style.backgroundImage = `url("${char.imageUrl}")`;
+  const imgEl = document.getElementById('char-img-el');
+  const fbEl = document.getElementById('char-img-fallback');
+  fbEl.style.display = 'none';
+  imgEl.style.display = '';
+  imgEl.onerror = () => { imgEl.style.display = 'none'; fbEl.style.display = 'flex'; fbEl.textContent = char.name; };
+  imgEl.src = char.imageUrl;
   document.getElementById('char-name').textContent = char.name;
   const meta = [];
   if (char.films.length) meta.push(`${char.films.length} film${char.films.length>1?'s':''}`);
@@ -948,7 +977,7 @@ function renderTeams(items) {
     const totalPaid = it.player.team.reduce((s, c) => s + c.paid, 0);
     const charsHtml = it.player.team.map(c => `
       <div class="char" title="${escapeHtml(c.name)} — $${c.paid}">
-        <img src="${c.imageUrl}" alt="" onerror="this.style.display='none'" />
+        <img src="${c.imageUrl}" alt="" referrerpolicy="no-referrer" onerror="this.style.display='none'" />
         <span>${escapeHtml(c.name)}</span>
       </div>
     `).join('') || '<div class="char">No characters</div>';
