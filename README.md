@@ -31,7 +31,9 @@ Settings are saved in `localStorage`.
 
 ## Characters
 
-Pulled live from the public [Disney API](https://disneyapi.dev/) — needs internet to start a game. Only characters with images and at least one film/show/game/attraction credit are used. Each character's point value is a weighted popularity score (films × 3 + tv shows × 2 + park attractions × 2 + short films + video games).
+Drawn from a curated list of ~100 popular Disney / Pixar characters (Mickey, Elsa, Simba, Woody, Stitch, etc.). Each character has a hand-tuned popularity score used in "character points" scoring mode. Images are fetched from the public [Disney API](https://disneyapi.dev/) by name lookup, so the game needs internet to start. If an image can't be loaded for a specific character, the stage shows the character's name as a fallback.
+
+To customize the roster or point values, edit the `CURATED_CHARACTERS` array near the top of the `<script>` block in `index.html`.
 
 ## Deploy
 

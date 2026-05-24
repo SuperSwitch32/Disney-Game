@@ -457,6 +457,127 @@
 
 <script>
 // ============================================================
+//  CURATED CHARACTER LIST
+//   { name, film, points }
+//   name = lookup key for the Disney API image
+//   points = popularity score (used in "character points" scoring mode)
+// ============================================================
+const CURATED_CHARACTERS = [
+  // Mickey & Friends
+  { name: 'Mickey Mouse', film: 'Steamboat Willie', points: 20 },
+  { name: 'Minnie Mouse', film: 'Mickey & Friends', points: 15 },
+  { name: 'Donald Duck', film: 'Mickey & Friends', points: 15 },
+  { name: 'Daisy Duck', film: 'Mickey & Friends', points: 10 },
+  { name: 'Goofy', film: 'Mickey & Friends', points: 15 },
+  { name: 'Pluto', film: 'Mickey & Friends', points: 12 },
+  // Classic films
+  { name: 'Snow White', film: 'Snow White', points: 13 },
+  { name: 'Cinderella', film: 'Cinderella', points: 15 },
+  { name: 'Aurora', film: 'Sleeping Beauty', points: 11 },
+  { name: 'Maleficent', film: 'Sleeping Beauty', points: 16 },
+  { name: 'Bambi', film: 'Bambi', points: 10 },
+  { name: 'Dumbo', film: 'Dumbo', points: 10 },
+  { name: 'Pinocchio', film: 'Pinocchio', points: 10 },
+  { name: 'Peter Pan', film: 'Peter Pan', points: 15 },
+  { name: 'Tinker Bell', film: 'Peter Pan', points: 15 },
+  { name: 'Captain Hook', film: 'Peter Pan', points: 12 },
+  { name: 'Alice', film: 'Alice in Wonderland', points: 12 },
+  { name: 'Cheshire Cat', film: 'Alice in Wonderland', points: 10 },
+  { name: 'Mad Hatter', film: 'Alice in Wonderland', points: 9 },
+  { name: 'Robin Hood', film: 'Robin Hood', points: 9 },
+  { name: 'Winnie the Pooh', film: 'Winnie the Pooh', points: 15 },
+  { name: 'Tigger', film: 'Winnie the Pooh', points: 12 },
+  { name: 'Eeyore', film: 'Winnie the Pooh', points: 10 },
+  { name: 'Piglet', film: 'Winnie the Pooh', points: 10 },
+  { name: 'Cruella De Vil', film: '101 Dalmatians', points: 12 },
+  // Renaissance
+  { name: 'Ariel', film: 'The Little Mermaid', points: 18 },
+  { name: 'Sebastian', film: 'The Little Mermaid', points: 9 },
+  { name: 'Ursula', film: 'The Little Mermaid', points: 13 },
+  { name: 'Belle', film: 'Beauty and the Beast', points: 16 },
+  { name: 'Beast', film: 'Beauty and the Beast', points: 14 },
+  { name: 'Lumiere', film: 'Beauty and the Beast', points: 9 },
+  { name: 'Gaston', film: 'Beauty and the Beast', points: 11 },
+  { name: 'Aladdin', film: 'Aladdin', points: 15 },
+  { name: 'Jasmine', film: 'Aladdin', points: 14 },
+  { name: 'Genie', film: 'Aladdin', points: 17 },
+  { name: 'Jafar', film: 'Aladdin', points: 12 },
+  { name: 'Simba', film: 'The Lion King', points: 18 },
+  { name: 'Mufasa', film: 'The Lion King', points: 15 },
+  { name: 'Scar', film: 'The Lion King', points: 15 },
+  { name: 'Timon', film: 'The Lion King', points: 12 },
+  { name: 'Pumbaa', film: 'The Lion King', points: 12 },
+  { name: 'Pocahontas', film: 'Pocahontas', points: 10 },
+  { name: 'Mulan', film: 'Mulan', points: 15 },
+  { name: 'Mushu', film: 'Mulan', points: 11 },
+  { name: 'Hercules', film: 'Hercules', points: 10 },
+  { name: 'Hades', film: 'Hercules', points: 12 },
+  { name: 'Quasimodo', film: 'The Hunchback of Notre Dame', points: 8 },
+  { name: 'Tarzan', film: 'Tarzan', points: 11 },
+  { name: 'Stitch', film: 'Lilo & Stitch', points: 17 },
+  { name: 'Lilo', film: 'Lilo & Stitch', points: 12 },
+  // Modern Disney
+  { name: 'Tiana', film: 'The Princess and the Frog', points: 11 },
+  { name: 'Rapunzel', film: 'Tangled', points: 15 },
+  { name: 'Flynn Rider', film: 'Tangled', points: 10 },
+  { name: 'Wreck-It Ralph', film: 'Wreck-It Ralph', points: 10 },
+  { name: 'Vanellope von Schweetz', film: 'Wreck-It Ralph', points: 9 },
+  { name: 'Elsa', film: 'Frozen', points: 20 },
+  { name: 'Anna', film: 'Frozen', points: 15 },
+  { name: 'Olaf', film: 'Frozen', points: 15 },
+  { name: 'Sven', film: 'Frozen', points: 8 },
+  { name: 'Kristoff', film: 'Frozen', points: 9 },
+  { name: 'Baymax', film: 'Big Hero 6', points: 13 },
+  { name: 'Judy Hopps', film: 'Zootopia', points: 11 },
+  { name: 'Nick Wilde', film: 'Zootopia', points: 11 },
+  { name: 'Moana', film: 'Moana', points: 16 },
+  { name: 'Maui', film: 'Moana', points: 13 },
+  { name: 'Raya', film: 'Raya and the Last Dragon', points: 9 },
+  { name: 'Mirabel', film: 'Encanto', points: 12 },
+  // Pixar — Toy Story
+  { name: 'Woody', film: 'Toy Story', points: 18 },
+  { name: 'Buzz Lightyear', film: 'Toy Story', points: 18 },
+  { name: 'Jessie', film: 'Toy Story', points: 11 },
+  { name: 'Rex', film: 'Toy Story', points: 7 },
+  { name: 'Hamm', film: 'Toy Story', points: 7 },
+  { name: 'Bo Peep', film: 'Toy Story', points: 7 },
+  { name: 'Lotso', film: 'Toy Story', points: 8 },
+  // Pixar — Monsters Inc.
+  { name: 'Mike Wazowski', film: 'Monsters, Inc.', points: 15 },
+  { name: 'Sulley', film: 'Monsters, Inc.', points: 15 },
+  { name: 'Boo', film: 'Monsters, Inc.', points: 9 },
+  { name: 'Randall Boggs', film: 'Monsters, Inc.', points: 8 },
+  // Pixar — Finding Nemo
+  { name: 'Nemo', film: 'Finding Nemo', points: 13 },
+  { name: 'Dory', film: 'Finding Nemo', points: 15 },
+  { name: 'Marlin', film: 'Finding Nemo', points: 10 },
+  // Pixar — Incredibles
+  { name: 'Mr. Incredible', film: 'The Incredibles', points: 12 },
+  { name: 'Elastigirl', film: 'The Incredibles', points: 11 },
+  { name: 'Jack-Jack', film: 'The Incredibles', points: 11 },
+  { name: 'Dash', film: 'The Incredibles', points: 7 },
+  { name: 'Violet', film: 'The Incredibles', points: 7 },
+  { name: 'Edna Mode', film: 'The Incredibles', points: 10 },
+  // Pixar — others
+  { name: 'Lightning McQueen', film: 'Cars', points: 14 },
+  { name: 'Mater', film: 'Cars', points: 10 },
+  { name: 'Remy', film: 'Ratatouille', points: 12 },
+  { name: 'WALL-E', film: 'WALL-E', points: 14 },
+  { name: 'EVE', film: 'WALL-E', points: 10 },
+  { name: 'Carl Fredricksen', film: 'Up', points: 10 },
+  { name: 'Russell', film: 'Up', points: 8 },
+  { name: 'Dug', film: 'Up', points: 10 },
+  { name: 'Joy', film: 'Inside Out', points: 12 },
+  { name: 'Sadness', film: 'Inside Out', points: 10 },
+  { name: 'Anger', film: 'Inside Out', points: 8 },
+  { name: 'Fear', film: 'Inside Out', points: 7 },
+  { name: 'Disgust', film: 'Inside Out', points: 7 },
+  { name: 'Merida', film: 'Brave', points: 10 },
+  { name: 'Miguel', film: 'Coco', points: 10 },
+  { name: 'Hector', film: 'Coco', points: 7 },
+];
+
+// ============================================================
 //  STATE
 // ============================================================
 const DEFAULTS = {
@@ -567,72 +688,50 @@ function setScoring(mode) {
 }
 
 // ============================================================
-//  CHARACTERS (Disney API)
+//  CHARACTERS (curated list + Disney API for images)
 // ============================================================
 async function fetchCharacters(n) {
-  // Hit a few random pages, pool the results, filter for usable ones.
-  // API: https://api.disneyapi.dev/character?page=N&pageSize=50
-  const PAGE_SIZE = 50;
-  // Try to estimate totalPages first
-  let totalPages = 150; // conservative fallback (~7500 chars)
-  try {
-    const r = await fetch(`https://api.disneyapi.dev/character?page=1&pageSize=${PAGE_SIZE}`);
-    const j = await r.json();
-    if (j.info && j.info.totalPages) totalPages = j.info.totalPages;
-  } catch (e) {
-    throw new Error('Could not reach the Disney API. Are you online?');
-  }
-
-  const pool = [];
-  const seenIds = new Set();
-  const triedPages = new Set();
-  const maxTries = 12;
-  let tries = 0;
-
-  while (pool.length < n * 4 && tries < maxTries) {
-    tries++;
-    let p;
-    do { p = 1 + Math.floor(Math.random() * totalPages); } while (triedPages.has(p));
-    triedPages.add(p);
-    try {
-      const r = await fetch(`https://api.disneyapi.dev/character?page=${p}&pageSize=${PAGE_SIZE}`);
-      const j = await r.json();
-      for (const c of (j.data || [])) {
-        if (seenIds.has(c._id)) continue;
-        seenIds.add(c._id);
-        if (!c.imageUrl) continue;
-        // Filter to characters with at least some "presence"
-        const presence = (c.films?.length || 0) + (c.tvShows?.length || 0) + (c.shortFilms?.length || 0) + (c.videoGames?.length || 0) + (c.parkAttractions?.length || 0);
-        if (presence === 0) continue;
-        pool.push({
-          id: c._id,
-          name: c.name,
-          imageUrl: c.imageUrl,
-          films: c.films || [],
-          tvShows: c.tvShows || [],
-          shortFilms: c.shortFilms || [],
-          videoGames: c.videoGames || [],
-          parkAttractions: c.parkAttractions || [],
-          points: computePoints(c),
-        });
-      }
-    } catch (e) { /* keep trying */ }
-  }
-
-  if (pool.length < n) throw new Error(`Only found ${pool.length} usable characters. Try again?`);
-
-  // Shuffle, take n
+  if (n > CURATED_CHARACTERS.length) n = CURATED_CHARACTERS.length;
+  const pool = [...CURATED_CHARACTERS];
   shuffle(pool);
-  return pool.slice(0, n);
+  // Take a few extras as backups in case some image lookups fail.
+  const picks = pool.slice(0, Math.min(n + 4, pool.length));
+
+  const loadingEl = document.getElementById('loading-text');
+  loadingEl.textContent = `Looking up ${picks.length} characters…`;
+
+  let done = 0;
+  const results = await Promise.all(picks.map(async (c) => {
+    const imageUrl = await lookupImage(c.name);
+    done++;
+    loadingEl.textContent = `Looking up characters… ${done}/${picks.length}`;
+    return { name: c.name, film: c.film, points: c.points, imageUrl };
+  }));
+
+  // Prefer ones with an image; fill remainder with image-less if needed.
+  const withImg = results.filter(r => r.imageUrl);
+  const withoutImg = results.filter(r => !r.imageUrl);
+  const final = withImg.slice(0, n);
+  while (final.length < n && withoutImg.length) final.push(withoutImg.shift());
+  if (final.length < n) throw new Error(`Could not load enough characters (got ${final.length}).`);
+  return final;
 }
-function computePoints(c) {
-  // Weighted popularity score
-  const f = c.films?.length || 0;
-  const s = c.shortFilms?.length || 0;
-  const t = c.tvShows?.length || 0;
-  const v = c.videoGames?.length || 0;
-  const p = c.parkAttractions?.length || 0;
-  return f * 3 + t * 2 + s * 1 + v * 1 + p * 2;
+
+async function lookupImage(name) {
+  try {
+    const r = await fetch(`https://api.disneyapi.dev/character?name=${encodeURIComponent(name)}`);
+    if (!r.ok) return null;
+    const j = await r.json();
+    const arr = Array.isArray(j.data) ? j.data : (j.data ? [j.data] : []);
+    // Prefer exact (case-insensitive) name match with an image.
+    const lc = name.toLowerCase();
+    const exact = arr.find(c => c.imageUrl && c.name && c.name.toLowerCase() === lc);
+    if (exact) return exact.imageUrl;
+    const any = arr.find(c => c.imageUrl);
+    return any ? any.imageUrl : null;
+  } catch {
+    return null;
+  }
 }
 function shuffle(a) {
   for (let i = a.length - 1; i > 0; i--) {
@@ -693,10 +792,7 @@ function startRound() {
   imgEl.onerror = () => { imgEl.style.display = 'none'; fbEl.style.display = 'flex'; fbEl.textContent = char.name; };
   imgEl.src = char.imageUrl;
   document.getElementById('char-name').textContent = char.name;
-  const meta = [];
-  if (char.films.length) meta.push(`${char.films.length} film${char.films.length>1?'s':''}`);
-  if (char.tvShows.length) meta.push(`${char.tvShows.length} show${char.tvShows.length>1?'s':''}`);
-  document.getElementById('char-meta').textContent = meta.join(' · ');
+  document.getElementById('char-meta').textContent = char.film || '';
   updateBidDisplay();
   updatePlayerStates();
   startTimer(settings.timerInit);
