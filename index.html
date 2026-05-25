@@ -1079,9 +1079,6 @@ function layoutPositions(n) {
   //   left player    → rot 270 (or -90)
   // Positions are CSS values for left/top of the (un-rotated) box; we
   // translate so the rotation pivots correctly.
-  const W = '100vw', H = '100vh';
-  // We define each panel with its center point (cx, cy in vw/vh) and a base
-  // width/height, then rotate.
   function p(cx, cy, w, h, rot) {
     return {
       left: `calc(${cx} - ${w}/2)`,
@@ -1091,10 +1088,45 @@ function layoutPositions(n) {
       rot,
     };
   }
-  // Distance of panel center from screen edge.
-  // Panels are 100px thick; placing center at 120px leaves a ~70px buffer
-  // between the panel's outer edge and the screen edge so rotated BID
-  // buttons sit clear of Safari chrome / iPad bezels.
+
+  // Phone-sized viewports can't fit 4-panels-around-the-edges + a stage in
+  // the middle without overlap. For these, put all players on two opposite
+  // edges (top/bottom in portrait, left/right in landscape) so the stage
+  // has a clean middle band.
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  if (Math.min(vw, vh) < 500) {
+    const isLandscape = vw > vh;
+    const edge = 55;
+    const T = 78;
+    const half1 = Math.ceil(n / 2);
+    const half2 = n - half1;
+    const out = [];
+    // Use computed pixel values from window.innerWidth/Height so positions
+    // match the actually-visible viewport (Safari's URL bar can shrink it).
+    if (isLandscape) {
+      for (let i = 0; i < half1; i++) {
+        const seg = vh / half1;
+        out.push(p(`${edge}px`, `${seg * (i + 0.5)}px`, `${seg - 12}px`, `${T}px`, -90));
+      }
+      for (let i = 0; i < half2; i++) {
+        const seg = vh / half2;
+        out.push(p(`${vw - edge}px`, `${seg * (i + 0.5)}px`, `${seg - 12}px`, `${T}px`, 90));
+      }
+    } else {
+      for (let i = 0; i < half1; i++) {
+        const seg = vw / half1;
+        out.push(p(`${seg * (i + 0.5)}px`, `${vh - edge}px`, `${seg - 12}px`, `${T}px`, 0));
+      }
+      for (let i = 0; i < half2; i++) {
+        const seg = vw / half2;
+        out.push(p(`${seg * (i + 0.5)}px`, `${edge}px`, `${seg - 12}px`, `${T}px`, 180));
+      }
+    }
+    return out;
+  }
+
+  // Tablet+: panels around all four edges with generous buffer for bezels.
   const EDGE = 120;
   const T = 100; // panel thickness
   if (n === 2) {
@@ -1263,6 +1295,17 @@ function escapeHtml(s) {
 
 // init
 refreshSetup();
+
+// Re-layout player slots when the device rotates or the viewport changes.
+let resizeDebounce;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeDebounce);
+  resizeDebounce = setTimeout(() => {
+    if (game && document.getElementById('auction').classList.contains('active')) {
+      renderPlayerSlots();
+    }
+  }, 120);
+});
 </script>
 </body>
 </html>
