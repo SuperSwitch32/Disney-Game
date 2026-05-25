@@ -1092,9 +1092,10 @@ function layoutPositions(n) {
     };
   }
   // Distance of panel center from screen edge.
-  // Panels are 100px thick; placing center at 80px leaves a 30px buffer from
-  // the screen edge so rotated BID buttons aren't clipped.
-  const EDGE = 80;
+  // Panels are 100px thick; placing center at 120px leaves a ~70px buffer
+  // between the panel's outer edge and the screen edge so rotated BID
+  // buttons sit clear of Safari chrome / iPad bezels.
+  const EDGE = 120;
   const T = 100; // panel thickness
   if (n === 2) {
     return [
