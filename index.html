@@ -16,6 +16,10 @@
     --muted: #9aa3d6;
     --good: #5ee2a0;
     --bad: #ff6b6b;
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
@@ -270,7 +274,8 @@
   }
   .quit-btn {
     position: absolute;
-    top: 6px; right: 6px;
+    top: calc(6px + var(--sat));
+    right: calc(6px + var(--sar));
     z-index: 21;
     background: rgba(11, 16, 38, 0.7);
     backdrop-filter: blur(6px);
@@ -1069,6 +1074,16 @@ function renderPlayerSlots() {
   updatePlayerStates();
 }
 
+function readSafeAreaInsets() {
+  const cs = getComputedStyle(document.documentElement);
+  return {
+    top: parseFloat(cs.getPropertyValue('--sat')) || 0,
+    bottom: parseFloat(cs.getPropertyValue('--sab')) || 0,
+    left: parseFloat(cs.getPropertyValue('--sal')) || 0,
+    right: parseFloat(cs.getPropertyValue('--sar')) || 0,
+  };
+}
+
 function layoutPositions(n) {
   // Returns array of { left, top, width, height, tx, ty, rot } strings.
   // We split the screen into edge zones. The stage occupies the middle.
@@ -1093,34 +1108,40 @@ function layoutPositions(n) {
   // the middle without overlap. For these, put all players on two opposite
   // edges (top/bottom in portrait, left/right in landscape) so the stage
   // has a clean middle band.
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
+  const vw = window.visualViewport?.width || window.innerWidth;
+  const vh = window.visualViewport?.height || window.innerHeight;
+  const safe = readSafeAreaInsets();
+  // Useable rectangle after iOS safe-area insets (notch / home indicator).
+  const usableTop = safe.top;
+  const usableBottom = vh - safe.bottom;
+  const usableLeft = safe.left;
+  const usableRight = vw - safe.right;
+  const usableW = usableRight - usableLeft;
+  const usableH = usableBottom - usableTop;
   if (Math.min(vw, vh) < 500) {
     const isLandscape = vw > vh;
-    const edge = 55;
+    const edge = 50;
     const T = 78;
     const half1 = Math.ceil(n / 2);
     const half2 = n - half1;
     const out = [];
-    // Use computed pixel values from window.innerWidth/Height so positions
-    // match the actually-visible viewport (Safari's URL bar can shrink it).
     if (isLandscape) {
       for (let i = 0; i < half1; i++) {
-        const seg = vh / half1;
-        out.push(p(`${edge}px`, `${seg * (i + 0.5)}px`, `${seg - 12}px`, `${T}px`, -90));
+        const seg = usableH / half1;
+        out.push(p(`${usableLeft + edge}px`, `${usableTop + seg * (i + 0.5)}px`, `${seg - 12}px`, `${T}px`, -90));
       }
       for (let i = 0; i < half2; i++) {
-        const seg = vh / half2;
-        out.push(p(`${vw - edge}px`, `${seg * (i + 0.5)}px`, `${seg - 12}px`, `${T}px`, 90));
+        const seg = usableH / half2;
+        out.push(p(`${usableRight - edge}px`, `${usableTop + seg * (i + 0.5)}px`, `${seg - 12}px`, `${T}px`, 90));
       }
     } else {
       for (let i = 0; i < half1; i++) {
-        const seg = vw / half1;
-        out.push(p(`${seg * (i + 0.5)}px`, `${vh - edge}px`, `${seg - 12}px`, `${T}px`, 0));
+        const seg = usableW / half1;
+        out.push(p(`${usableLeft + seg * (i + 0.5)}px`, `${usableBottom - edge}px`, `${seg - 12}px`, `${T}px`, 0));
       }
       for (let i = 0; i < half2; i++) {
-        const seg = vw / half2;
-        out.push(p(`${seg * (i + 0.5)}px`, `${edge}px`, `${seg - 12}px`, `${T}px`, 180));
+        const seg = usableW / half2;
+        out.push(p(`${usableLeft + seg * (i + 0.5)}px`, `${usableTop + edge}px`, `${seg - 12}px`, `${T}px`, 180));
       }
     }
     return out;
@@ -1296,16 +1317,20 @@ function escapeHtml(s) {
 // init
 refreshSetup();
 
-// Re-layout player slots when the device rotates or the viewport changes.
+// Re-layout player slots when the device rotates, the viewport changes,
+// or Safari's URL bar grows/shrinks.
 let resizeDebounce;
-window.addEventListener('resize', () => {
+function scheduleRelayout() {
   clearTimeout(resizeDebounce);
   resizeDebounce = setTimeout(() => {
     if (game && document.getElementById('auction').classList.contains('active')) {
       renderPlayerSlots();
     }
   }, 120);
-});
+}
+window.addEventListener('resize', scheduleRelayout);
+window.addEventListener('orientationchange', scheduleRelayout);
+window.visualViewport?.addEventListener('resize', scheduleRelayout);
 </script>
 </body>
 </html>
