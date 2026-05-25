@@ -807,20 +807,30 @@ async function fetchItems(n, gameType) {
 }
 
 async function lookupCharacterImage(item) {
-  // Use the Disney API for clean character renders, but be strict: require
-  // BOTH the exact name AND a film/show credit that matches our curated
-  // film. The API sometimes has a single record under a name that's
-  // actually a different character (e.g. a "Miguel" with concept art that
-  // isn't from Coco), so we can't just trust a unique name match.
-  //
-  // Set `verifyFilm: false` on a curated entry to skip the film check
-  // (used for Mickey & Friends generics where no specific film applies).
+  // Per-character overrides, tried in order of reliability:
+  //   imageUrl  — hardcoded URL, skip the API entirely
+  //   apiId     — fetch directly by Disney API numeric ID
+  //   apiName   — exact name to search the API with (overrides display name)
+  //   verifyFilm: false — accept any unique-name match without film check
+  if (item.imageUrl) return item.imageUrl;
+
+  if (item.apiId) {
+    try {
+      const r = await fetch(`https://api.disneyapi.dev/character/${encodeURIComponent(item.apiId)}`);
+      if (!r.ok) return null;
+      const j = await r.json();
+      const c = Array.isArray(j.data) ? j.data[0] : j.data;
+      return c?.imageUrl || null;
+    } catch { return null; }
+  }
+
+  const lookupName = item.apiName || item.name;
   try {
-    const r = await fetch(`https://api.disneyapi.dev/character?name=${encodeURIComponent(item.name)}`);
+    const r = await fetch(`https://api.disneyapi.dev/character?name=${encodeURIComponent(lookupName)}`);
     if (!r.ok) return null;
     const j = await r.json();
     const arr = Array.isArray(j.data) ? j.data : (j.data ? [j.data] : []);
-    const lc = item.name.toLowerCase();
+    const lc = lookupName.toLowerCase();
     const exacts = arr.filter(c => c.imageUrl && c.name && c.name.toLowerCase() === lc);
     if (exacts.length === 0) return null;
 
@@ -834,8 +844,6 @@ async function lookupCharacterImage(item) {
         });
       });
       if (filmMatched.length > 0) return filmMatched[0].imageUrl;
-      // Name matched but the film doesn't — almost certainly the wrong
-      // character. Refuse so the stage shows the name-card fallback.
       return null;
     }
 
